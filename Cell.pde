@@ -11,18 +11,31 @@ class Cell {
   // Map of what cells are connected to this one 
   HashSet<Cell> connections = new HashSet<Cell>();
   
-  // What proportion of division the cell is in 
+  // What proportion of division the cell has undertaken
   float divisionAmount = 0;
   Cell daughter;
   
+  // What proportion of the cell is in light or in the soil
   float soilSurface = 0;
   float light = 1;
+  
+  // Metabolites
+  float energy = 0;
+  float nitrates = 0;
+  float protein = 0;
+  
+  ArrayList<Enzyme> enzymes = new ArrayList<Enzyme>();
 
   Cell(Organism organism, float x, float y, int id) {
     this.organism = organism;
     this.x = x;
     this.y = y;
     this.id = id;
+    
+    // Add proteins
+    enzymes.add(new Chlorophyll(this));
+    enzymes.add(new NitratePore(this));
+    enzymes.add(new Anabolism(this));
   }
 
   void draw() {
@@ -33,12 +46,32 @@ class Cell {
     
     textAlign(CENTER, CENTER);
     fill(10);
-    text(id, x, y);
+    //text(id, x, y);
     //text(soilSurface, x, y);
+    //text(energy, x, y);
+    //text(nitrates, x, y);
+    text(protein, x, y);
   }
 
   void update() {
-    // Calculate amount of cell that is in the soil
+    determineSoilCoverage();
+    metabolise();
+      
+    if (divisionAmount > 0) {
+      divide();
+    } else if (protein >= REPLICATION_COST) {
+      startDivision();
+    }
+  }
+
+  void metabolise() {
+    for (Enzyme enzyme : enzymes) {
+      enzyme.update();
+    }
+  }
+
+  // Calculate the proportion of the cell's surface in contact with the soil
+  void determineSoilCoverage() {
     float distanceBelowSoilTop = y - SOIL;
     
     if (distanceBelowSoilTop < -r) {
@@ -47,10 +80,6 @@ class Cell {
       soilSurface = 1;
     } else {
        soilSurface = (PI - 2 * asin(distanceBelowSoilTop / -r)) / TWO_PI;
-    }
-
-    if (divisionAmount > 0) {
-      divide();
     }
   }
 
@@ -71,7 +100,8 @@ class Cell {
   }
   
   void startDivision() {
-    divisionAmount = DIVISION_STEP;
+    protein -= REPLICATION_COST;
+    divisionAmount = DIVISION_STEP; //<>//
 
     // Cytokinesis direction
     float ckx = random(-0.5, 0.5);
@@ -83,7 +113,7 @@ class Cell {
     cky /= d;
     
     // Create a daughter cell
-    daughter = organism.addCell(x + ckx, y + cky);
+    daughter = organism.addDaughterCell(x + ckx, y + cky);
     
     // Connect mother and daughter
     this.connections.add(daughter);

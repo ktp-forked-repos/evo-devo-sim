@@ -7,12 +7,19 @@ static final Comparator<Cell> SORT_BY_Y = new Comparator<Cell>() {
 
 class Organism {
   ArrayList<Cell> cells = new ArrayList<Cell>();
+  ArrayList<Cell> newCells = new ArrayList<Cell>();
   int currentCellId = 0;
 
   // Create a new cell at position (x, y) and return it
-  Cell addCell(float x, float y) {
+  void addCell(float x, float y) {
     Cell cell = new Cell(this, x, y, currentCellId++);
     cells.add(cell);
+  }
+  
+  // Adds cell to newCells array to avoid issues when iterating through the cells array
+  Cell addDaughterCell(float x, float y) {
+    Cell cell = new Cell(this, x, y, currentCellId++);
+    newCells.add(cell);
     return cell;
   }
 
@@ -24,6 +31,12 @@ class Organism {
     
     for (Cell cell : cells) {
       cell.update();
+    }
+    
+    // Add new cells
+    if (newCells.size() > 0) {
+      cells.addAll(newCells);
+      newCells.clear();
     }
     
     findCellConnections();

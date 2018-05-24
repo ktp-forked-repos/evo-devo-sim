@@ -9,7 +9,6 @@ void setup() {
     
   creature = new Organism();
   creature.addCell(width / 2, GROUND);
-  creature.addCell(width / 2 + CELL_R, GROUND - CELL_R);
 }
 
 void draw() {
