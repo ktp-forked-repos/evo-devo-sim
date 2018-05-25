@@ -23,14 +23,43 @@ class Organism {
     return cell;
   }
 
+  void updateMilliseconds(int n) {
+    float m = millis();
+    
+    while (millis() - m < n) {
+      update();
+    }
+  }
+
+  void updateN(int n) {
+    for (int i = 0; i < n; i++) {
+      update();
+    }
+  }
+
   void update() {
+    updateCount++;
+    
     // Sort from highest to lowest cell
     Collections.sort(cells, SORT_BY_Y);
     
     findLightOnCells();
     
     for (Cell cell : cells) {
-      cell.update();
+      cell.determineSoilCoverage();
+      cell.metabolise();
+    }
+    
+    for (Cell cell : cells) {
+      cell.updateMetabolites();
+    }
+    
+    for (Cell cell : cells) {
+      if (cell.divisionAmount > 0) {
+        cell.divide();
+      } else if (cell.protein >= REPLICATION_COST) {
+        cell.startDivision();
+      }
     }
     
     // Add new cells
@@ -192,7 +221,7 @@ class Organism {
   }
   
   void drawConnections() { 
-    stroke(70, 100, 190, 200);
+    stroke(100, 100, 120, 220);
     strokeWeight(3);
     
     float r1 = CELL_R - 5;

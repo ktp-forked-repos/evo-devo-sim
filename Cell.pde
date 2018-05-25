@@ -17,12 +17,17 @@ class Cell {
   
   // What proportion of the cell is in light or in the soil
   float soilSurface = 0;
-  float light = 1;
+  float light = 0;
   
   // Metabolites
   float energy = 0;
   float nitrates = 0;
   float protein = 0;
+  
+  // Changes in metabolites
+  float dEnergy = 0;
+  float dNitrates = 0;
+  float dProtein = 0;
   
   ArrayList<Enzyme> enzymes = new ArrayList<Enzyme>();
 
@@ -34,40 +39,29 @@ class Cell {
     
     // Add proteins
     enzymes.add(new Chlorophyll(this));
-    enzymes.add(new NitratePore(this));
+    enzymes.add(new NitrateUptaker(this));
     enzymes.add(new Anabolism(this));
+    enzymes.add(new EnergyPore(this));
+    enzymes.add(new NitratePore(this));
   }
 
   void draw() {
     strokeWeight(2);
-    stroke(80, 255 * light, 255 * soilSurface);
-    fill(80, 255 * light, 255 * soilSurface, 240);
+    stroke(100, 200 * light, 200 * soilSurface);
+    fill(100, 200 * light, 200 * soilSurface, 240);
     ellipse(x, y, r * 2, r * 2);
     
+    textSize(10);
     textAlign(CENTER, CENTER);
     fill(10);
     //text(id, x, y);
     //text(soilSurface, x, y);
-    //text(energy, x, y);
-    //text(nitrates, x, y);
-    text(protein, x, y);
-  }
-
-  void update() {
-    determineSoilCoverage();
-    metabolise();
-      
-    if (divisionAmount > 0) {
-      divide();
-    } else if (protein >= REPLICATION_COST) {
-      startDivision();
-    }
-  }
-
-  void metabolise() {
-    for (Enzyme enzyme : enzymes) {
-      enzyme.update();
-    }
+    //text(round(energy), x, y - 10);
+    //text(round(nitrates), x, y);
+    //text(round(protein), x, y + 10);
+    
+    fill(12);
+    text(round(protein), x, y);
   }
 
   // Calculate the proportion of the cell's surface in contact with the soil
@@ -81,6 +75,21 @@ class Cell {
     } else {
        soilSurface = (PI - 2 * asin(distanceBelowSoilTop / -r)) / TWO_PI;
     }
+  }
+
+  void metabolise() {
+    for (Enzyme enzyme : enzymes) {
+      enzyme.update();
+    }
+  }
+  
+  void updateMetabolites() {
+    energy += dEnergy;
+    nitrates += dNitrates;
+    protein += dProtein;
+    dEnergy = 0;
+    dNitrates = 0;
+    dProtein = 0;
   }
 
   void move() {
@@ -129,15 +138,23 @@ class Cell {
     float dx = x - daughter.x;
     float dy = y - daughter.y;
     float currentDist = sqrt(dx * dx + dy * dy);
-    float d = (targetDist - currentDist) * 0.5;
-    dx /= currentDist;
-    dy /= currentDist;
+    float d = (targetDist - currentDist) * DIVISION_FORCE / currentDist;
+    dx *= d;
+    dy *= d;
 
     // Move cells apart
-    x += dx * d;
-    y += dy * d;
-    daughter.x -= dx * d;
-    daughter.y -= dy * d;
+    this.dx += dx;
+    this.dy += dy;
+    daughter.dx -= dx;
+    daughter.dy -= dy; //<>//
+    
+    // Ensure mother and daughter share resources until they split
+    float halfEnergy = (energy + daughter.energy) * 0.5;
+    float halfNitrates = (nitrates + daughter.nitrates) * 0.5;
+    energy = halfEnergy;
+    nitrates = halfNitrates;
+    daughter.energy = halfEnergy;
+    daughter.nitrates = halfNitrates;
     
     if (divisionAmount >= 1) {
         endDivision();
