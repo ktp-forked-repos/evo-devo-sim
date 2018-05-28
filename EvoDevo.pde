@@ -6,7 +6,6 @@
  * Interface to show cell properties on mouse over
  * Options to colour by various properties
  * Make amount of metabolite available to proteins a function of protein amount
- * Sensor domains
  * Different connection proteins
  * Transporters
  * Regulators
@@ -18,7 +17,7 @@ import java.util.*;
 import java.util.Comparator;
 
 Organism creature;
-boolean running = false;
+boolean running = true;
 int updateCount = 0;
 
 void setup() {
@@ -27,6 +26,7 @@ void setup() {
 
   creature = new Organism();
   creature.addCell((width + 150) / 2, SOIL);
+  creature.cells.get(0).energy = 200;
 }
 
 void draw() {
@@ -41,8 +41,8 @@ void draw() {
   rect(0, GROUND, width, height - GROUND);
 
   if (running) {
-    creature.updateMilliseconds(60);
-    //creature.updateN(10);
+    //creature.updateMilliseconds(60);
+    creature.updateN(10);
   }
   
   creature.draw();

@@ -30,6 +30,7 @@ class Cell {
   float dProtein = 0;
   
   ArrayList<Enzyme> enzymes = new ArrayList<Enzyme>();
+  Enzyme[] sensors = new Enzyme[3];
 
   Cell(Organism organism, float x, float y, int id) {
     this.organism = organism;
@@ -38,11 +39,18 @@ class Cell {
     this.id = id;
     
     // Add proteins
+    sensors[0] = new LightSensor(this);
+    sensors[1] = new EnergySensor(this);
+    sensors[2] = new NitrateSensor(this);
+      
+    enzymes.add(new LightSensor(this));
     enzymes.add(new Chlorophyll(this));
     enzymes.add(new NitrateUptaker(this));
     enzymes.add(new Anabolism(this));
     enzymes.add(new EnergyPore(this));
     enzymes.add(new NitratePore(this));
+    
+    enzymes.get(1).addDomain(0, 100);
   }
 
   void draw() {
@@ -53,15 +61,17 @@ class Cell {
     
     textSize(10);
     textAlign(CENTER, CENTER);
-    fill(10);
+    fill(255);
     //text(id, x, y);
     //text(soilSurface, x, y);
     //text(round(energy), x, y - 10);
     //text(round(nitrates), x, y);
     //text(round(protein), x, y + 10);
     
-    fill(12);
-    text(round(protein), x, y);
+    textSize(12);
+    //text(round(protein), x, y);
+    //text(enzymes.get(0).activation, x, y - 10); //<>//
+    text(enzymes.get(1).activation, x, y);
   }
 
   // Calculate the proportion of the cell's surface in contact with the soil
@@ -78,6 +88,28 @@ class Cell {
   }
 
   void metabolise() {
+    // Determine activity of each protein
+    for (Enzyme enzyme : enzymes) {
+        enzyme.regulate();
+    }
+    
+    // Update activity of each protein and find sum
+    float totalActiveEnzymes = 0;
+    for (Enzyme enzyme : enzymes) {
+        enzyme.activation += enzyme.activationChange;
+        totalActiveEnzymes += enzyme.activation;
+    }
+    
+    // 10% of cell energy is available to meet protein upkeep costs
+    if (totalActiveEnzymes * ENZYME_COST > energy * 0.1) {
+        // Proteins deactivated as upkeeping costs aren't met
+        float degradation = (energy * 0.1) / (totalActiveEnzymes * ENZYME_COST);
+        for (Enzyme enzyme : enzymes) {
+            enzyme.activation *= degradation;
+        }
+    }
+    
+    // Enzyme catalyse their reactions
     for (Enzyme enzyme : enzymes) {
       enzyme.update();
     }
@@ -93,8 +125,9 @@ class Cell {
   }
 
   void move() {
-    dx *= lerp(AIR_DAMPING, SOIL_DAMPING, soilSurface);
-    dy *= lerp(AIR_DAMPING, SOIL_DAMPING, soilSurface);
+    float damping = AIR_DAMPING * (1 - soilSurface) + SOIL_DAMPING * soilSurface;
+    dx *= damping;
+    dy *= damping;
 
     this.dy += GRAVITY;
 
@@ -167,10 +200,6 @@ class Cell {
   }
   
   boolean mouseOver() {
-    if (dist(x, y, mouseX, mouseY) <= r) {
-      return true;
-    } else {
-      return false;
-    }
+    return (dist(x, y, mouseX, mouseY) <= r);
   }
 }

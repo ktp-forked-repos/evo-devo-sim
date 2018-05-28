@@ -29,7 +29,12 @@ float DIVISION_STEP = 0.0025;
 
 /***   Metabolism   ***/
 
-float REPLICATION_COST = 1000;
+float REPLICATION_COST = 500;
+
+// How much energy each active unit of protein requires
+float ENZYME_COST = 0.001;
+
+float MAX_CHANGE_IN_ACTIVATION = 0.01;
 
 // Maximum of 2 units of energy produced per cell in full light
 float LIGHT = 2;
