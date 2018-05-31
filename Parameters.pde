@@ -47,3 +47,5 @@ float BASE_NITRATES = 200;
 
 // Rate at which chemicals cross pores
 float DIFFUSION = 0.005;
+
+float MUTATION_RATE = 0.5;//0.01;

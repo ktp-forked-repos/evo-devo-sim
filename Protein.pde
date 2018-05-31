@@ -1,7 +1,7 @@
 
 class Enzyme {
   Cell cell;
-  float activation = 0.5;
+  float activation = 0;
   float activationChange = 0;
   
   ArrayList<Enzyme> domainTargets = new ArrayList<Enzyme>();
@@ -15,26 +15,26 @@ class Enzyme {
   void update() {}
   
   void addDomain(int proteinIndex, float weight) {
-    domainTargets.add(cell.enzymes.get(proteinIndex));
+    domainTargets.add(cell.enzymes[proteinIndex]);
     domainWeights.add(weight);
   }
-  
+
   void regulate() {
-    float newActivation = 0;
+    // Default activation is 0.05
+    float newActivation = -2.944439;
     
     for (int i = 0; i < domainTargets.size(); i++) {
         newActivation += domainTargets.get(i).activation * domainWeights.get(i);
     }
-    newActivation = sigmoid(newActivation);
+    
+    // Pass through sigmoid function to constrain to [0, 1]
+    newActivation = 1 / (1 + exp(-newActivation));
     
     // Limit change in activation to 5% in each direction
     activationChange = constrain(newActivation - this.activation, -MAX_CHANGE_IN_ACTIVATION, MAX_CHANGE_IN_ACTIVATION);
   };
 };
 
-float sigmoid(float n) {
-    return 1 / (1 + exp(-n));
-}
 
 // Chlorophyll uses light to generate energy
 class Chlorophyll extends Enzyme {
@@ -45,6 +45,7 @@ class Chlorophyll extends Enzyme {
   }
 };
 
+
 // NitratePore takes up Nitrates from the soil
 class NitrateUptaker extends Enzyme {
   NitrateUptaker(Cell cell) { super(cell); }
@@ -53,6 +54,7 @@ class NitrateUptaker extends Enzyme {
     cell.dNitrates += cell.soilSurface * constrain(activation * DIFFUSION * (BASE_NITRATES - cell.nitrates), 0, 1);
   }
 };
+
 
 // Anabolism converts nitrates and energy into protein
 class Anabolism extends Enzyme {
@@ -73,31 +75,67 @@ class Anabolism extends Enzyme {
   }
 };
 
+
+// Pores allows metabolites to diffuse between cells
+class Pore extends Enzyme {
+  float[] weights;
+  
+  Pore(Cell cell) { super(cell); }
+   
+  void addBindingWeights(float[] weights) {
+    float maxWeights = 0;
+    for (int i = 0; i < weights.length; i++) {
+      maxWeights += weights[i];
+    }
+    
+    if (maxWeights > 0) {
+      for (int i = 0; i < weights.length; i++) {
+        weights[i] /= maxWeights;
+      }
+    }
+    
+    this.weights = weights;
+  }
+  
+  float getActivePores(Cell cell2) {
+    float activePores = 0;
+    // TODO: move this so we only have to do it once per tick
+    for (int i = 0; i < 4; i++) { //<>//
+      activePores += weights[i] * cell.connectionProteins[i].activation * cell2.connectionProteins[i].activation;
+    }
+    return activePores;
+  }
+};
+
+
 // EnergyPore allows energy to diffuse between cells
-class EnergyPore extends Enzyme {
+class EnergyPore extends Pore {
   EnergyPore(Cell cell) { super(cell); }
   
   void update() {
     for (Cell cell2 : cell.connections) {
-      float diffusion = activation * DIFFUSION * (cell2.energy - cell.energy);
+      float diffusion = getActivePores(cell2); //<>//
+      diffusion *= activation * DIFFUSION * (cell2.energy - cell.energy);
       cell.dEnergy += diffusion;
       cell2.dEnergy -= diffusion;
     }
   }
 };
 
+
 // NitratePore allows nitrates to diffuse between cells
-class NitratePore extends Enzyme {
+class NitratePore extends Pore {
   NitratePore(Cell cell) { super(cell); }
   
   void update() {
     for (Cell cell2 : cell.connections) {
-      float diffusion = activation * DIFFUSION * (cell2.nitrates - cell.nitrates);
+      float diffusion = activation * DIFFUSION * (cell2.nitrates - cell.nitrates); //<>//
       cell.dNitrates += diffusion;
       cell2.dNitrates -= diffusion;
     }
   }
 };
+
 
 // LightSensor has an activation proportional to the light hitting the cell
 class LightSensor extends Enzyme {
@@ -106,12 +144,14 @@ class LightSensor extends Enzyme {
   void update() { activation = cell.light; }
 };
 
+
 // EnergySensor has an activation proportional to the energy in the cell
 class EnergySensor extends Enzyme {
   EnergySensor(Cell cell) { super(cell); }
   
   void update() { activation = cell.energy / (cell.energy + 500); }
 };
+
 
 // EnergySensor has an activation proportional to the energy in the cell
 class NitrateSensor extends Enzyme {

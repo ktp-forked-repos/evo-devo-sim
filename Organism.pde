@@ -11,9 +11,10 @@ class Organism {
   int currentCellId = 0;
 
   // Create a new cell at position (x, y) and return it
-  void addCell(float x, float y) {
+  Cell addCell(float x, float y) {
     Cell cell = new Cell(this, x, y, currentCellId++);
     cells.add(cell);
+    return cell;
   }
   
   // Adds cell to newCells array to avoid issues when iterating through the cells array
@@ -73,7 +74,6 @@ class Organism {
     for (Cell cell : cells) {
       cell.move();
     }
-    
   }
 
   // Calculate light hitting each cell assume it comes directly down from above
@@ -155,6 +155,7 @@ class Organism {
     int r2 = CELL_D * CELL_D;
     Cell cell1, cell2;
     float x1, y1, dx, dy, d, force;
+    float m = cells.get(0).connectionProteins.length;
 
     for (i = 0; i < n - 1; i++) {
       cell1 = cells.get(i);
@@ -196,7 +197,14 @@ class Organism {
           } else {
             // Connection contracts
             d = sqrt(d);
-            force = CONTRACT_FORCE * (d - CELL_D) / (MAX_STRETCH - CELL_D);
+            
+            // Connection force dependent on which connection proteins are shared
+            force = 0;
+            for (int k = 0; k < m; k++) {
+              force += cell1.connectionProteins[k].activation * cell2.connectionProteins[k].activation;
+            }
+            
+            force *= CONTRACT_FORCE * (d - CELL_D) / (MAX_STRETCH - CELL_D);
             dx /= d;
             dy /= d;
   

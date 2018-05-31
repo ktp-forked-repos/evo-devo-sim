@@ -29,8 +29,9 @@ class Cell {
   float dNitrates = 0;
   float dProtein = 0;
   
-  ArrayList<Enzyme> enzymes = new ArrayList<Enzyme>();
-  Enzyme[] sensors = new Enzyme[3];
+  Enzyme[] enzymes = new Enzyme[16];
+  Pore[] pores = new Pore[2];
+  Enzyme[] connectionProteins = new Enzyme[4];
 
   Cell(Organism organism, float x, float y, int id) {
     this.organism = organism;
@@ -39,20 +40,63 @@ class Cell {
     this.id = id;
     
     // Add proteins
-    sensors[0] = new LightSensor(this);
-    sensors[1] = new EnergySensor(this);
-    sensors[2] = new NitrateSensor(this);
-      
-    enzymes.add(new LightSensor(this));
-    enzymes.add(new Chlorophyll(this));
-    enzymes.add(new NitrateUptaker(this));
-    enzymes.add(new Anabolism(this));
-    enzymes.add(new EnergyPore(this));
-    enzymes.add(new NitratePore(this));
+    // Sensor domains
+    enzymes[0] = new LightSensor(this);
+    enzymes[1] = new EnergySensor(this);
+    enzymes[2] = new NitrateSensor(this);
     
-    enzymes.get(1).addDomain(0, 100);
+    // Enzymes
+    enzymes[3] = new Chlorophyll(this);
+    enzymes[4] = new NitrateUptaker(this);
+    enzymes[5] = new Anabolism(this);
+    
+    // Pores
+    pores[0] = new EnergyPore(this);
+    pores[1] = new NitratePore(this);
+    enzymes[6] = pores[0];
+    enzymes[7] = pores[1];
+    
+    // Regulatory proteins
+    enzymes[8] = new Enzyme(this);
+    enzymes[9] = new Enzyme(this);
+    enzymes[10] = new Enzyme(this);
+    enzymes[11] = new Enzyme(this);
+    
+    // Connection proteins
+    connectionProteins[0] = new Enzyme(this);
+    connectionProteins[1] = new Enzyme(this);
+    connectionProteins[2] = new Enzyme(this);
+    connectionProteins[3] = new Enzyme(this);
+    
+    enzymes[12] = connectionProteins[0];
+    enzymes[13] = connectionProteins[1];
+    enzymes[14] = connectionProteins[2];
+    enzymes[15] = connectionProteins[3];
+    
+    // Regulatory protein 2 has a light sensor
+    enzymes[9].addDomain(0, 20);
+    
+    // Chlorophyll as regulated by regulatory proteins 2 and 3  
+    enzymes[3].addDomain(9, 10);
+    enzymes[3].addDomain(10, -12);
+    
+    // Enzymes regulated by regulatory protein 1
+    //enzymes[4].addDomain(8, 10);
+    //enzymes[5].addDomain(8, 10);
+    enzymes[6].addDomain(8, 10);
+    enzymes[7].addDomain(8, 10);
+    enzymes[8].addDomain(8, 10);
+    
+    // Connection protein 1 regulated by regulatory protein 1
+    enzymes[12].addDomain(8, 10);
+    
+    // Pores are associated with connection protein 1
+    float weights[] = {1, 0, 0, 0};
+    pores[0].addBindingWeights(weights);
+    weights[1] = 1;
+    pores[1].addBindingWeights(weights);
   }
-
+  
   void draw() {
     strokeWeight(2);
     stroke(100, 200 * light, 200 * soilSurface);
@@ -64,14 +108,15 @@ class Cell {
     fill(255);
     //text(id, x, y);
     //text(soilSurface, x, y);
-    //text(round(energy), x, y - 10);
-    //text(round(nitrates), x, y);
-    //text(round(protein), x, y + 10);
+    text(round(energy), x, y - 10);
+    text(round(nitrates), x, y);
+    text(round(protein), x, y + 10);
     
-    textSize(12);
-    //text(round(protein), x, y);
-    //text(enzymes.get(0).activation, x, y - 10); //<>//
-    text(enzymes.get(1).activation, x, y);
+    //textSize(12);
+    //text(enzymes.get(0).activation, x, y - 10);
+    //text(enzymes[3].activation, x, y - 10); //<>//
+    //text(enzymes[8].activation, x, y);
+    //text(enzymes[9].activation, x, y + 10);
   }
 
   // Calculate the proportion of the cell's surface in contact with the soil
@@ -89,29 +134,29 @@ class Cell {
 
   void metabolise() {
     // Determine activity of each protein
-    for (Enzyme enzyme : enzymes) {
-        enzyme.regulate();
+    for (int i = 3; i < enzymes.length; i++) {
+        enzymes[i].regulate();
     }
     
     // Update activity of each protein and find sum
     float totalActiveEnzymes = 0;
-    for (Enzyme enzyme : enzymes) {
-        enzyme.activation += enzyme.activationChange;
-        totalActiveEnzymes += enzyme.activation;
+    for (int i = 3; i < enzymes.length; i++) {
+        enzymes[i].activation += enzymes[i].activationChange;
+        totalActiveEnzymes += enzymes[i].activation;
     }
     
     // 10% of cell energy is available to meet protein upkeep costs
     if (totalActiveEnzymes * ENZYME_COST > energy * 0.1) {
         // Proteins deactivated as upkeeping costs aren't met
         float degradation = (energy * 0.1) / (totalActiveEnzymes * ENZYME_COST);
-        for (Enzyme enzyme : enzymes) {
-            enzyme.activation *= degradation;
+        for (int i = 3; i < enzymes.length; i++) {
+            enzymes[i].activation *= degradation;
         }
     }
     
     // Enzyme catalyse their reactions
-    for (Enzyme enzyme : enzymes) {
-      enzyme.update();
+    for (int i = 0; i < 8; i++) {
+      enzymes[i].update();
     }
   }
   
@@ -143,8 +188,8 @@ class Cell {
   
   void startDivision() {
     protein -= REPLICATION_COST;
-    divisionAmount = DIVISION_STEP; //<>//
-
+    divisionAmount = DIVISION_STEP;
+ //<>//
     // Cytokinesis direction
     float ckx = random(-0.5, 0.5);
     float cky = random(-0.5, 0.5);
@@ -165,7 +210,7 @@ class Cell {
   void divide() {
     // Proportion of division that has happened
     divisionAmount += DIVISION_STEP;
-    
+     //<>//
     // Move cells apart
     float targetDist = divisionAmount * (r + daughter.r);
     float dx = x - daughter.x;
@@ -179,8 +224,8 @@ class Cell {
     this.dx += dx;
     this.dy += dy;
     daughter.dx -= dx;
-    daughter.dy -= dy; //<>//
-    
+    daughter.dy -= dy;
+     //<>//
     // Ensure mother and daughter share resources until they split
     float halfEnergy = (energy + daughter.energy) * 0.5;
     float halfNitrates = (nitrates + daughter.nitrates) * 0.5;
