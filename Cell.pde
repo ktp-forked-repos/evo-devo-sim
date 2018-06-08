@@ -9,7 +9,7 @@ class Cell {
   float r = CELL_R;
  
   // Map of what cells are connected to this one 
-  HashSet<Cell> connections = new HashSet<Cell>();
+  HashMap<Cell, float[]> connections = new HashMap<Cell, float[]>();
   
   // What proportion of division the cell has undertaken
   float divisionAmount = 0;
@@ -32,6 +32,7 @@ class Cell {
   Pore[] pores = new Pore[2];
   Enzyme[] connectionProteins;
   Enzyme[] enzymes;
+  WeightValue[] directionWeights;
 
   Cell(Organism organism, float x, float y, int id, Genome genome) {
     this.organism = organism;
@@ -74,6 +75,8 @@ class Cell {
     for (int i = 3; i < genome.nAllProteins; i++) {
       enzymes[i].bias = genome.biases[i - 3].value;
     }
+    
+    directionWeights = genome.directionWeights;
     
     /*** Add regulatory domains ***/
     
@@ -191,21 +194,39 @@ class Cell {
     protein -= REPLICATION_COST;
     divisionAmount = DIVISION_STEP;
  //<>//
-    // Cytokinesis direction
+    // Cytokinesis direction - baseline is random
     float ckx = random(-0.5, 0.5);
     float cky = random(-0.5, 0.5);
+    float d;
+    
+    // Weight direction based on gravity
+    cky += directionWeights[0].value;
+    
+    // Weight direction based on direction of each connection
+    for (Map.Entry<Cell, float[]> entry : connections.entrySet()) {
+      Cell cell2 = entry.getKey();
+      // Vector to cell
+      float cx = cell2.x - this.x;
+      float cy = cell2.y - this.y;
+      d = 1 / sqrt(cx * cx + cy * cy);
+      cx *= d;
+      cy *= d;
+      
+      float[] connectionActivations = entry.getValue();
+      
+      for (int i = 0; i < connectionActivations.length; i++) {
+        ckx += cx * connectionActivations[i] * directionWeights[i + 1].value;
+        cky += cy * connectionActivations[i] * directionWeights[i + 1].value;
+      }
+    }
     
     // Normalise
-    float d = sqrt(ckx * ckx + cky * cky);
+    d = sqrt(ckx * ckx + cky * cky);
     ckx /= d; 
     cky /= d;
     
     // Create a daughter cell
-    daughter = organism.addDaughterCell(x + ckx, y + cky);
-    
-    // Connect mother and daughter
-    this.connections.add(daughter);
-    daughter.connections.add(this);
+    daughter = organism.addDaughterCell(x + ckx, y + cky, this);
   }
 
   void divide() {

@@ -1,13 +1,11 @@
 /**********************************************
  *   TODO
- * Direction of cytokinesis based on connection proteins
- * Genes for weighting cytokinesis
- * Activation of daughter proteins equal to parent proteins
+ * Create daughter organism (copy and mutate genome)
  * Evolution
+ * Test that genes work as expected 
  * Pan and zoom
  * Display with Voronoi
  * Options to colour by various properties
- * Create testing setup
  * Make amount of metabolite available to proteins a function of protein amount
  * Transporters
  * Connection proteins activate other proteins based on connectivity 
@@ -27,7 +25,7 @@ void setup() {
   randomSeed(0);
 
   //String dna = "1,0,0,0,1,1,0,0;9,0,20;3,9,10;3,10,-12;6,8,10;7,8,10;8,8,10;12,8,10;";
-  String dna = "1,0,0,0,1,1,0,0;0,0,0,0,0,0,0,0,0,0,0,0,0;9,0,20;3,9,10;3,10,-12;4,8,10;5,8,10;6,8,10;7,8,10;8,8,10;12,8,10;";
+  String dna = "1,0,0,0,1,1,0,0;0,0,0,0,0,0,0,0,0,0,0,0,0;0,0,0,0,0;9,0,20;3,9,10;3,10,-12;4,8,10;5,8,10;6,8,10;7,8,10;8,8,10;12,8,10;";
   creature = new Organism(dna);
   
   Cell seed = creature.addCell((width + 150) / 2, SOIL + CELL_R);
@@ -37,15 +35,24 @@ void setup() {
   
   // Regulatory protein 1 starts with activation of 1 to kick start things
   seed.enzymes[8].activation = 1;
-  
-  // Create second cell to test properties
-  //Cell seed2 = creature.addCell((width + 150) / 2 + CELL_R * 2, SOIL + CELL_R);
-  //seed2.energy = 200;
-  //seed2.nitrates = 200;
-  //seed.enzymes[8].activation = 1;
 }
 
 void draw() {
+  showCreature();
+  //evolve(); //<>//
+}
+
+void evolve() {
+  // Let creature grow and get its fitness
+  float fitness = creature.getFitness(15000);
+  println(fitness);
+  
+  // If greater than parent's fitness, then replace and save genome
+  // Create mutated child
+}
+
+// Show a creature growing
+void showCreature() {
   // Sky
   background(160, 200, 255);
 
@@ -57,18 +64,18 @@ void draw() {
   rect(0, GROUND, width, height - GROUND);
 
   creature.draw();
-  creature.drawConnections(); //<>//
+  creature.drawConnections();
   drawInterface();
   
   if (running) {
-    creature.updateMilliseconds(60);
+    //creature.updateMilliseconds(50);
     //creature.updateN(10);
     //creature.update();
     
     //int m = millis();
-    //creature.updateN(15000);
+    creature.updateN(15000);
     //println(millis() - m);
-    //running = false;
+    running = false;
   }
 }
 

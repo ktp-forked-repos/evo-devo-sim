@@ -29,9 +29,19 @@ class Organism {
   }
   
   // Adds cell to newCells array to avoid issues when iterating through the cells array
-  Cell addDaughterCell(float x, float y) {
+  Cell addDaughterCell(float x, float y, Cell parent) {
     Cell cell = new Cell(this, x, y, currentCellId++, genome);
     newCells.add(cell);
+    
+    // Connect mother and daughter
+    parent.connections.put(cell, new float[]{0,0,0,0});
+    cell.connections.put(parent, new float[]{0,0,0,0});
+    
+    // Copy over state of enzyme activation
+    for (int i = 0; i < parent.enzymes.length; i++) {
+      cell.enzymes[i].activation = parent.enzymes[i].activation;
+    }
+    
     return cell;
   }
 
@@ -48,6 +58,31 @@ class Organism {
       update();
     }
   }
+  
+  // Run creature for n ticks and determine the maximum height of a cell
+  float getFitness(int n) {
+    // Fitness is the height of the cells above the ground
+    float fitness = cells.get(0).y;
+    
+    float cellCount = cells.size();
+    
+    for (int i = 0; i < n / 2500; i++) {
+      for (int j = 0; j < 2500; j++) {
+        update();
+        // Fitness is the highest point a cell ever reaches
+        fitness = min(fitness, cells.get(0).y);
+      }
+      
+      // Quit early if the organism is not growing
+      if (cells.size() > cellCount) {
+        cellCount = cells.size();
+      } else {
+        break;
+      }
+    }
+    
+    return GROUND - fitness;
+  }
 
   void update() {
     updateCount++;
@@ -56,6 +91,8 @@ class Organism {
     Collections.sort(cells, SORT_BY_Y);
     
     findLightOnCells();
+    
+    findCellConnections();
     
     for (Cell cell : cells) {
       cell.determineSoilCoverage();
@@ -79,8 +116,6 @@ class Organism {
       cells.addAll(newCells);
       newCells.clear();
     }
-    
-    findCellConnections();
     
     for (Cell cell : cells) {
       cell.move();
@@ -166,7 +201,7 @@ class Organism {
     int r2 = CELL_D * CELL_D;
     Cell cell1, cell2;
     float x1, y1, dx, dy, d, force;
-    float m = cells.get(0).connectionProteins.length;
+    int m = cells.get(0).connectionProteins.length;
 
     for (i = 0; i < n - 1; i++) {
       cell1 = cells.get(i);
@@ -197,10 +232,16 @@ class Organism {
           cell2.dx += force * dx;
           cell2.dy += force * dy;
           
+          // Calculate the activation of each connection proteins based on the amount active in each cell
+          float[] connectionActivations = new float[m];
+          for (int k = 0; k < m; k++) {
+            connectionActivations[k] = cell1.connectionProteins[k].activation * cell2.connectionProteins[k].activation;
+          }
+          
           // Overlapping cells form a connection
-          cell1.connections.add(cell2);
-          cell2.connections.add(cell1);
-        } else if (cell1.connections.contains(cell2)) {
+          cell1.connections.put(cell2, connectionActivations);
+          cell2.connections.put(cell1, connectionActivations);
+        } else if (cell1.connections.containsKey(cell2)) {
           if (d > MAX_STRETCH_2) {
             // Connection breaks
             cell1.connections.remove(cell2);
@@ -211,8 +252,10 @@ class Organism {
             
             // Connection force dependent on which connection proteins are shared
             force = 0;
+            float[] connectionActivations = cell1.connections.get(cell2);
             for (int k = 0; k < m; k++) {
-              force += cell1.connectionProteins[k].activation * cell2.connectionProteins[k].activation;
+              connectionActivations[k] = cell1.connectionProteins[k].activation * cell2.connectionProteins[k].activation;
+              force += connectionActivations[k];
             }
             
             force *= CONTRACT_FORCE * (d - CELL_D) / (MAX_STRETCH - CELL_D);
@@ -247,7 +290,7 @@ class Organism {
     float r2 = CELL_R + 5;
     
     for (Cell cell1 : cells) {
-      for (Cell cell2 : cell1.connections) {
+      for (Cell cell2 : cell1.connections.keySet()) {
         if (cell1.id < cell2.id) {
           float dx = cell2.x - cell1.x;
           float dy = cell2.y - cell1.y;

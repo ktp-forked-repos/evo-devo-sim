@@ -16,6 +16,7 @@ void drawInterface() {
     textSize(11);
     y += 30;
     y = writeData("Cell id: " + targetCell.id, y);
+    y = writeData("Position: " + targetCell.x + ", " + targetCell.y, y);
     y = writeData("Division: " + targetCell.divisionAmount, y);
     
     y += 8;

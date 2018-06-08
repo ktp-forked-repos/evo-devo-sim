@@ -21,7 +21,6 @@ class Enzyme {
   }
 
   void regulate() {
-    // Default activation is 0.05
     float newActivation = bias;
     
     for (int i = 0; i < domainTargets.size(); i++) {
@@ -84,7 +83,7 @@ class Pore extends Enzyme {
   Pore(Cell cell) { super(cell); }
    
   void addBindingWeights(float[] weights) {
-    float maxWeights = 0;
+    float maxWeights = 0.01;
     for (int i = 0; i < weights.length; i++) {
       maxWeights += weights[i];
     }
@@ -103,11 +102,10 @@ class Pore extends Enzyme {
     addBindingWeights(weights);
   }
   
-  float getActivePores(Cell cell2) {
+  float getActivePores(float[] connectivity) {
     float activePores = 0;
-    // TODO: move this so we only have to do it once per tick
-    for (int i = 0; i < 4; i++) { //<>//
-      activePores += weights[i] * cell.connectionProteins[i].activation * cell2.connectionProteins[i].activation;
+    for (int i = 0; i < connectivity.length; i++) { //<>//
+      activePores += weights[i] * connectivity[i];
     }
     return activePores;
   }
@@ -119,8 +117,10 @@ class EnergyPore extends Pore {
   EnergyPore(Cell cell) { super(cell); }
   
   void update() {
-    for (Cell cell2 : cell.connections) {
-      float diffusion = getActivePores(cell2); //<>//
+    for (Map.Entry<Cell, float[]> entry : cell.connections.entrySet()) {
+      Cell cell2 = entry.getKey();
+      float[] connectionActivations = entry.getValue();
+      float diffusion = getActivePores(connectionActivations); //<>//
       diffusion *= activation * DIFFUSION * (cell2.energy - cell.energy);
       cell.dEnergy += diffusion;
       cell2.dEnergy -= diffusion;
@@ -134,8 +134,11 @@ class NitratePore extends Pore {
   NitratePore(Cell cell) { super(cell); }
   
   void update() {
-    for (Cell cell2 : cell.connections) {
-      float diffusion = activation * DIFFUSION * (cell2.nitrates - cell.nitrates); //<>//
+    for (Map.Entry<Cell, float[]> entry : cell.connections.entrySet()) {
+      Cell cell2 = entry.getKey();
+      float[] connectionActivations = entry.getValue();
+      float diffusion = getActivePores(connectionActivations);
+      diffusion *= activation * DIFFUSION * (cell2.nitrates - cell.nitrates); //<>//
       cell.dNitrates += diffusion;
       cell2.dNitrates -= diffusion;
     }

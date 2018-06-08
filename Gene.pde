@@ -5,8 +5,16 @@ class Genome {
   int nRegulatoryProteins = 4;
   int nAllProteins = nConnectionProteins + nConnectionProteins + nPores + 6;
   
+  // Each pore is has a weight for each connection protein
+  // This is the amount of that pore associated with each connection protein
   PositiveWeightValue[] poreWeights = new PositiveWeightValue[nPores * nConnectionProteins];
+  
+  // These are the default activity of each enzyme in the absence of regulatory proteins
   WeightValue[] biases = new WeightValue[nConnectionProteins + nConnectionProteins + nPores + 3];
+  
+  // These weights are used when determining the direction of cytokinesis
+  // They weight the for gravity vector and each connection vector 
+  WeightValue[] directionWeights = new WeightValue[nConnectionProteins + 1];
   ArrayList<DomainGene> domainGenes = new ArrayList<DomainGene>();
   
   // Create a random genome
@@ -18,6 +26,10 @@ class Genome {
     
     for (int i = 0; i < biases.length; i++) {
       biases[i] = new WeightValue();
+    }
+    
+    for (int i = 0; i < directionWeights.length; i++) {
+      directionWeights[i] = new WeightValue();
     }
     
     // Create 2 - 16 random domain genes
@@ -37,14 +49,20 @@ class Genome {
         this.poreWeights[i] = new PositiveWeightValue(Float.valueOf(poreWeights[i]));
     }
     
-    // Pore weights
+    // Enzyme biases
     String[] biases = genes[1].split(",");
     for (int i = 0; i < biases.length; i++) {
         this.biases[i] = new WeightValue(Float.valueOf(biases[i]));
     }
     
+    // Weights the direction of cytokinesis based on connection proteins
+    String[] directionWeights = genes[2].split(",");
+    for (int i = 0; i < directionWeights.length; i++) {
+        this.directionWeights[i] = new WeightValue(Float.valueOf(directionWeights[i]));
+    }
+    
     // Domain genes
-    for (int i = 2; i < genes.length; i++) {
+    for (int i = 3; i < genes.length; i++) {
       String[] values = genes[i].split(",");
       domainGenes.add(new DomainGene(
         Integer.valueOf(values[0]),
@@ -69,7 +87,8 @@ class Genome {
     return s;
   }
   
-  void copy() {
+  Genome copy() {
+    return new Genome(this.toString());
   }
   
   void mutate() {
