@@ -2,8 +2,11 @@
 class Genome {
   int nPores = 2;
   int nConnectionProteins = 4;
+  int nRegulatoryProteins = 4;
+  int nAllProteins = nConnectionProteins + nConnectionProteins + nPores + 6;
   
   PositiveWeightValue[] poreWeights = new PositiveWeightValue[nPores * nConnectionProteins];
+  WeightValue[] biases = new WeightValue[nConnectionProteins + nConnectionProteins + nPores + 3];
   ArrayList<DomainGene> domainGenes = new ArrayList<DomainGene>();
   
   // Create a random genome
@@ -13,6 +16,10 @@ class Genome {
       poreWeights[i] = new PositiveWeightValue();
     }
     
+    for (int i = 0; i < biases.length; i++) {
+      biases[i] = new WeightValue();
+    }
+    
     // Create 2 - 16 random domain genes
     int n = 2 + floor(random(14));
     for (int i = 0; i < n; i++) {
@@ -20,11 +27,46 @@ class Genome {
     }
   }
   
-  // Create a genome from data
-  Genome(float[] poreWeights) {
+  // Create genome from string of DNA
+  Genome(String dna) {
+    String[] genes = dna.split(";");
+    
+    // Pore weights
+    String[] poreWeights = genes[0].split(",");
     for (int i = 0; i < poreWeights.length; i++) {
-      this.poreWeights[i] = new PositiveWeightValue(poreWeights[i]);
+        this.poreWeights[i] = new PositiveWeightValue(Float.valueOf(poreWeights[i]));
     }
+    
+    // Pore weights
+    String[] biases = genes[1].split(",");
+    for (int i = 0; i < biases.length; i++) {
+        this.biases[i] = new WeightValue(Float.valueOf(biases[i]));
+    }
+    
+    // Domain genes
+    for (int i = 2; i < genes.length; i++) {
+      String[] values = genes[i].split(",");
+      domainGenes.add(new DomainGene(
+        Integer.valueOf(values[0]),
+        Integer.valueOf(values[1]),
+        Float.valueOf(values[2])
+      ));
+    }
+  }
+
+  String toString() {
+    String s = "";
+    
+    for (int i = 0; i < poreWeights.length; i++) {
+        s += poreWeights[i];
+        s += (i < poreWeights.length - 1) ? "," : ";";
+    }
+    
+    for (DomainGene gene : domainGenes) {
+      s += gene.toString() + ';';
+    }
+    
+    return s;
   }
   
   void copy() {
@@ -36,9 +78,26 @@ class Genome {
       poreWeights[i].mutate();
     }
     
+    for (int i = 0; i < biases.length; i++) {
+      biases[i].mutate();
+    }
+    
     // Domain genes
     for (DomainGene gene : domainGenes) {
       gene.mutate();
+    }
+    
+    if (random(1) < GENE_DUPLICATION_RATE) {
+      if (random(1) < 0.5) {
+        // Delete a gene
+        if (domainGenes.size() > 0) {
+          int index = floor(random(domainGenes.size()));
+          domainGenes.remove(index);
+        }
+      } else {
+        // Add a new random domain
+        domainGenes.add(new DomainGene());
+      }
     }
   }
 }
@@ -68,7 +127,7 @@ class DomainGene {
   }
   
   String toString() {
-    return "Domain " + values[0] + " " + values[1] + " " + values[2];
+    return values[0] + "," + values[1] + "," + values[2];
   }
 }
 
@@ -84,6 +143,8 @@ class GeneValue {
   }
   
   void mutate() {}
+  
+  String toString() { return Float.toString(value); }
 }
 
 
@@ -99,17 +160,21 @@ class WeightValue extends GeneValue {
   
   void mutateWeight() {
     if (random(1) < MUTATION_RATE) {
-      float r = random(1);
-      if (r > 0.5) {
-        value *= random(0.9, 1.1);
-      } else if (r > 0.25) {
-        value *= random(0.8, 1.2);
-      } else if (r > 0.125) {
-        value *= random(0.6, 1.4);
-      } else if (r > 0.0625) {
-        value *= random(0.2, 1.8);
+      if (value == 0) {
+        value = random(-10, 10);
       } else {
-        value *= -1;
+        float r = random(1);
+        if (r > 0.5) {
+          value *= random(0.9, 1.1);
+        } else if (r > 0.25) {
+          value *= random(0.8, 1.2);
+        } else if (r > 0.125) {
+          value *= random(0.6, 1.4);
+        } else if (r > 0.0625) {
+          value *= random(0.2, 1.8);
+        } else {
+          value *= -1;
+        }
       }
     }
   }
@@ -128,15 +193,19 @@ class PositiveWeightValue extends GeneValue {
   
   void mutateWeight() {
     if (random(1) < MUTATION_RATE) {
-      float r = random(1);
-      if (r > 0.5) {
-        value *= random(0.9, 1.1);
-      } else if (r > 0.25) {
-        value *= random(0.8, 1.2);
-      } else if (r > 0.125) {
-        value *= random(0.6, 1.4);
-      } else if (r > 0.0625) {
-        value *= random(0.2, 1.8);
+      if (value == 0) {
+        value = random(10);
+      } else {
+        float r = random(1);
+        if (r > 0.5) {
+          value *= random(0.9, 1.1);
+        } else if (r > 0.25) {
+          value *= random(0.8, 1.2);
+        } else if (r > 0.125) {
+          value *= random(0.6, 1.4);
+        } else if (r > 0.0625) {
+          value *= random(0.2, 1.8);
+        }
       }
     }
   }
@@ -145,19 +214,25 @@ class PositiveWeightValue extends GeneValue {
 
 // Index of a protein that can regulate other genes
 class RegulatorIndex extends GeneValue {
+  int maxValue = 16;
+  
   RegulatorIndex(float value) {
     super(value);
   }
   
   RegulatorIndex() {
     super();
-    value = floor(random(16));
+    value = floor(random(maxValue));
   }
   
   void mutateWeight() {
     if (random(1) < MUTATION_RATE) {
-      value = floor(random(16));
+      value = floor(random(maxValue));
     }
+  }
+  
+  String toString() {
+    return Integer.toString((int)value);
   }
 }
 
@@ -177,5 +252,9 @@ class RegulateeIndex extends GeneValue {
     if (random(1) < MUTATION_RATE) {
       value = 3 + floor(random(13));
     }
+  }
+  
+  String toString() {
+    return Integer.toString((int)value);
   }
 }

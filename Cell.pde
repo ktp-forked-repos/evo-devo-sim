@@ -29,17 +29,19 @@ class Cell {
   float dNitrates = 0;
   float dProtein = 0;
   
-  Enzyme[] enzymes = new Enzyme[16];
   Pore[] pores = new Pore[2];
-  Enzyme[] connectionProteins = new Enzyme[4];
+  Enzyme[] connectionProteins;
+  Enzyme[] enzymes;
 
-  Cell(Organism organism, float x, float y, int id) {
+  Cell(Organism organism, float x, float y, int id, Genome genome) {
     this.organism = organism;
     this.x = x;
     this.y = y;
     this.id = id;
     
-    // Add proteins
+    /*** Add proteins ***/
+    enzymes = new Enzyme[genome.nAllProteins];
+    
     // Sensor domains
     enzymes[0] = new LightSensor(this);
     enzymes[1] = new EnergySensor(this);
@@ -56,51 +58,50 @@ class Cell {
     enzymes[6] = pores[0];
     enzymes[7] = pores[1];
     
-    // Regulatory proteins
-    enzymes[8] = new Enzyme(this);
-    enzymes[9] = new Enzyme(this);
-    enzymes[10] = new Enzyme(this);
-    enzymes[11] = new Enzyme(this);
+    // Add regulatory proteins
+    for (int i = 0; i < genome.nRegulatoryProteins; i++) {
+      enzymes[8 + i] = new Enzyme(this);
+    }
     
-    // Connection proteins
-    connectionProteins[0] = new Enzyme(this);
-    connectionProteins[1] = new Enzyme(this);
-    connectionProteins[2] = new Enzyme(this);
-    connectionProteins[3] = new Enzyme(this);
+    // Add connection proteins
+    connectionProteins = new Enzyme[genome.nConnectionProteins];
+    for (int i = 0; i < genome.nConnectionProteins; i++) {
+      connectionProteins[i] = new Enzyme(this);
+      enzymes[12 + i] = connectionProteins[i];
+    }
     
-    enzymes[12] = connectionProteins[0];
-    enzymes[13] = connectionProteins[1];
-    enzymes[14] = connectionProteins[2];
-    enzymes[15] = connectionProteins[3];
+    /*** Add biases ***/
+    for (int i = 3; i < genome.nAllProteins; i++) {
+      enzymes[i].bias = genome.biases[i - 3].value;
+    }
     
-    // Regulatory protein 2 has a light sensor
-    enzymes[9].addDomain(0, 20);
+    /*** Add regulatory domains ***/
     
-    // Chlorophyll as regulated by regulatory proteins 2 and 3  
-    enzymes[3].addDomain(9, 10);
-    enzymes[3].addDomain(10, -12);
+    for (DomainGene gene : genome.domainGenes) {
+      Enzyme target = enzymes[(int) gene.values[0].value];
+      int regulator = (int) gene.values[1].value;
+      float weight = gene.values[2].value;
+      target.addDomain(regulator, weight);
+    }
     
-    // Enzymes regulated by regulatory protein 1
-    //enzymes[4].addDomain(8, 10);
-    //enzymes[5].addDomain(8, 10);
-    enzymes[6].addDomain(8, 10);
-    enzymes[7].addDomain(8, 10);
-    enzymes[8].addDomain(8, 10);
-    
-    // Connection protein 1 regulated by regulatory protein 1
-    enzymes[12].addDomain(8, 10);
-    
-    // Pores are associated with connection protein 1
-    float weights[] = {1, 0, 0, 0};
-    pores[0].addBindingWeights(weights);
-    weights[1] = 1;
-    pores[1].addBindingWeights(weights);
+    // Add binding weights to each pore to determine which connection proteins they are associated with
+    pores[0].addBindingWeights(
+      genome.poreWeights[0],
+      genome.poreWeights[1],
+      genome.poreWeights[2],
+      genome.poreWeights[3]);
+      
+    pores[1].addBindingWeights(
+      genome.poreWeights[4],
+      genome.poreWeights[5],
+      genome.poreWeights[6],
+      genome.poreWeights[7]);
   }
   
   void draw() {
     strokeWeight(2);
-    stroke(100, 200 * light, 200 * soilSurface);
-    fill(100, 200 * light, 200 * soilSurface, 240);
+    stroke(0, 200 * energy / 1000, 255 * nitrates / 100);
+    fill(0, 200 * energy / 1000, 255 * nitrates / 100, 240);
     ellipse(x, y, r * 2, r * 2);
     
     textSize(10);

@@ -1,8 +1,9 @@
 /**********************************************
  *   TODO
- * Create creature from genome
  * Direction of cytokinesis based on connection proteins
  * Genes for weighting cytokinesis
+ * Activation of daughter proteins equal to parent proteins
+ * Evolution
  * Pan and zoom
  * Display with Voronoi
  * Options to colour by various properties
@@ -10,7 +11,7 @@
  * Make amount of metabolite available to proteins a function of protein amount
  * Transporters
  * Connection proteins activate other proteins based on connectivity 
- * Evolution
+ * Allow number of regulators and connectors to mutate
 ***********************************************/
 
 import java.util.*;
@@ -25,7 +26,10 @@ void setup() {
   size(960, 540);
   randomSeed(0);
 
-  creature = new Organism();
+  //String dna = "1,0,0,0,1,1,0,0;9,0,20;3,9,10;3,10,-12;6,8,10;7,8,10;8,8,10;12,8,10;";
+  String dna = "1,0,0,0,1,1,0,0;0,0,0,0,0,0,0,0,0,0,0,0,0;9,0,20;3,9,10;3,10,-12;4,8,10;5,8,10;6,8,10;7,8,10;8,8,10;12,8,10;";
+  creature = new Organism(dna);
+  
   Cell seed = creature.addCell((width + 150) / 2, SOIL + CELL_R);
   
   // Seeds start with an initial amount of energy to avoid immediate starvation
@@ -35,10 +39,10 @@ void setup() {
   seed.enzymes[8].activation = 1;
   
   // Create second cell to test properties
-  Cell seed2 = creature.addCell((width + 150) / 2 + CELL_R * 2, SOIL + CELL_R);
-  seed2.energy = 200;
-  seed2.nitrates = 200;
-  seed.enzymes[8].activation = 1;
+  //Cell seed2 = creature.addCell((width + 150) / 2 + CELL_R * 2, SOIL + CELL_R);
+  //seed2.energy = 200;
+  //seed2.nitrates = 200;
+  //seed.enzymes[8].activation = 1;
 }
 
 void draw() {
@@ -57,9 +61,14 @@ void draw() {
   drawInterface();
   
   if (running) {
-    //creature.updateMilliseconds(60);
+    creature.updateMilliseconds(60);
     //creature.updateN(10);
-    creature.update();
+    //creature.update();
+    
+    //int m = millis();
+    //creature.updateN(15000);
+    //println(millis() - m);
+    //running = false;
   }
 }
 

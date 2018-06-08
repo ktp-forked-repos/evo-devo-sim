@@ -3,7 +3,7 @@
 int CELL_R = 20;
 int CELL_D = CELL_R * 2;
 
-int GROUND = 520;  // Height - 20
+int GROUND = 540;  // Screen Height
 float SOIL = GROUND - CELL_R * 2.25;
 
 /***   Physics   ***/
@@ -48,4 +48,6 @@ float BASE_NITRATES = 200;
 // Rate at which chemicals cross pores
 float DIFFUSION = 0.005;
 
-float MUTATION_RATE = 0.5;//0.01;
+float MUTATION_RATE = 0.01;
+
+float GENE_DUPLICATION_RATE = 0.02;

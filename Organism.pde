@@ -6,20 +6,31 @@ static final Comparator<Cell> SORT_BY_Y = new Comparator<Cell>() {
 };
 
 class Organism {
+  Genome genome;
   ArrayList<Cell> cells = new ArrayList<Cell>();
   ArrayList<Cell> newCells = new ArrayList<Cell>();
   int currentCellId = 0;
 
+  // Create an organism with a random genome
+  Organism() {
+    genome = new Genome();
+  }
+  
+  // Create organism from DNA
+  Organism(String dna) {
+    genome = new Genome(dna);
+  }
+  
   // Create a new cell at position (x, y) and return it
   Cell addCell(float x, float y) {
-    Cell cell = new Cell(this, x, y, currentCellId++);
+    Cell cell = new Cell(this, x, y, currentCellId++, genome);
     cells.add(cell);
     return cell;
   }
   
   // Adds cell to newCells array to avoid issues when iterating through the cells array
   Cell addDaughterCell(float x, float y) {
-    Cell cell = new Cell(this, x, y, currentCellId++);
+    Cell cell = new Cell(this, x, y, currentCellId++, genome);
     newCells.add(cell);
     return cell;
   }

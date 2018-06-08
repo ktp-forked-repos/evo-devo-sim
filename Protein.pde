@@ -3,6 +3,7 @@ class Enzyme {
   Cell cell;
   float activation = 0;
   float activationChange = 0;
+  float bias = 0;
   
   ArrayList<Enzyme> domainTargets = new ArrayList<Enzyme>();
   ArrayList<Float> domainWeights = new ArrayList<Float>();
@@ -21,7 +22,7 @@ class Enzyme {
 
   void regulate() {
     // Default activation is 0.05
-    float newActivation = -2.944439;
+    float newActivation = bias;
     
     for (int i = 0; i < domainTargets.size(); i++) {
         newActivation += domainTargets.get(i).activation * domainWeights.get(i);
@@ -95,6 +96,11 @@ class Pore extends Enzyme {
     }
     
     this.weights = weights;
+  }
+  
+  void addBindingWeights(GeneValue weight1, GeneValue weight2, GeneValue weight3, GeneValue weight4) {
+    float[] weights = { weight1.value, weight2.value, weight3.value, weight4.value };
+    addBindingWeights(weights);
   }
   
   float getActivePores(Cell cell2) {
