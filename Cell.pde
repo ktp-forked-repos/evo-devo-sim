@@ -81,9 +81,9 @@ class Cell {
     /*** Add regulatory domains ***/
     
     for (DomainGene gene : genome.domainGenes) {
-      Enzyme target = enzymes[(int) gene.values[0].value];
-      int regulator = (int) gene.values[1].value;
-      float weight = gene.values[2].value;
+      Enzyme target = enzymes[(int) gene.value1.value];
+      int regulator = (int) gene.value2.value;
+      float weight = gene.value3.value;
       target.addDomain(regulator, weight);
     }
     

@@ -10,7 +10,7 @@ float SOIL = GROUND - CELL_R * 2.25;
 
 float AIR_DAMPING = 0.95;
 float SOIL_DAMPING = 0.5;
-float GRAVITY = 0.005;
+float GRAVITY = 0.004;
 
 // Maximum force from cells repelling on another
 float REPEL_FORCE = 20;
@@ -48,6 +48,6 @@ float BASE_NITRATES = 200;
 // Rate at which chemicals cross pores
 float DIFFUSION = 0.005;
 
-float MUTATION_RATE = 0.01;
+float MUTATION_RATE = 0.02;
 
 float GENE_DUPLICATION_RATE = 0.02;

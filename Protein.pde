@@ -97,7 +97,7 @@ class Pore extends Enzyme {
     this.weights = weights;
   }
   
-  void addBindingWeights(GeneValue weight1, GeneValue weight2, GeneValue weight3, GeneValue weight4) {
+  void addBindingWeights(PositiveWeightValue weight1, PositiveWeightValue weight2, PositiveWeightValue weight3, PositiveWeightValue weight4) {
     float[] weights = { weight1.value, weight2.value, weight3.value, weight4.value };
     addBindingWeights(weights);
   }

@@ -20,12 +20,22 @@ Cell targetCell;
 boolean running = true;
 int updateCount = 0;
 
+float parentFitness;
+int generation = 0;
+
 void setup() {
   size(960, 540);
-  randomSeed(0);
 
   //String dna = "1,0,0,0,1,1,0,0;9,0,20;3,9,10;3,10,-12;6,8,10;7,8,10;8,8,10;12,8,10;";
   String dna = "1,0,0,0,1,1,0,0;0,0,0,0,0,0,0,0,0,0,0,0,0;0,0,0,0,0;9,0,20;3,9,10;3,10,-12;4,8,10;5,8,10;6,8,10;7,8,10;8,8,10;12,8,10;";
+  creature = getCreature(dna);
+  
+  // Get initial fitness
+  randomSeed(0);
+  parentFitness = creature.getFitness(15000);
+}
+
+Organism getCreature(String dna) {
   creature = new Organism(dna);
   
   Cell seed = creature.addCell((width + 150) / 2, SOIL + CELL_R);
@@ -35,20 +45,35 @@ void setup() {
   
   // Regulatory protein 1 starts with activation of 1 to kick start things
   seed.enzymes[8].activation = 1;
+  
+  return creature;
 }
 
 void draw() {
-  showCreature();
-  //evolve(); //<>//
+  //showCreature();
+  evolve(); //<>//
 }
 
 void evolve() {
+  randomSeed(0);
+  generation++;
+  
+  // Create mutated child
+  Genome childGenome = creature.genome.copy();
+  childGenome.mutate();
+  Organism child = getCreature(childGenome.toString());
+  
   // Let creature grow and get its fitness
-  float fitness = creature.getFitness(15000);
-  println(fitness);
+  float childFitness = child.getFitness(15000);
+  println(generation, childFitness);
   
   // If greater than parent's fitness, then replace and save genome
-  // Create mutated child
+  if (childFitness > parentFitness) {
+    creature = child;
+    parentFitness = childFitness; 
+  }
+  showCreature();
+  noLoop();
 }
 
 // Show a creature growing
@@ -73,9 +98,9 @@ void showCreature() {
     //creature.update();
     
     //int m = millis();
-    creature.updateN(15000);
+    //creature.updateN(15000);
     //println(millis() - m);
-    running = false;
+    //running = false;
   }
 }
 
